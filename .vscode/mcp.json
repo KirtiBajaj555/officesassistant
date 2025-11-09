@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "gmail": {
+      "command": "node",
+      "args": [
+        "/home/keshavbajaj/Gmail-MCP-Server/dist/index.js"
+      ]
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest",
+        "--port",
+        "8931"
+      ]
+    },
+    "excel": {
+      "command": "npx",
+      "args": [
+        "tsx",
+        "/home/keshavbajaj/excel-mcp-server/src/index.ts"
+      ]
+    }
+  }
+}
