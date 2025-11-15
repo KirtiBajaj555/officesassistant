@@ -3,13 +3,14 @@
 import asyncio
 import os
 from langchain_google_genai import ChatGoogleGenerativeAI # type: ignore
-
+import dotenv
+dotenv.load_dotenv()
+from langchain.agents import create_agent
 from langchain_mcp_adapters.client import MultiServerMCPClient # type: ignore
 from langgraph.checkpoint.memory import InMemorySaver # type: ignore
-from langgraph.prebuilt import create_react_agent  # type: ignore
 
 #os.environ["OLLAMA_HOST"] = "http://127.0.0.1:11434"
-# os.environ["GOOGLE_API_KEY"] = "AIzaSyBauKF8LMohkRh7MWTLPDQ4KG4STVcduII"
+os.environ["GOOGLE_API_KEY"] = "AIzaSyBauKF8LMohkRh7MWTLPDQ4KG4STVcduII"
 
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash",
@@ -41,25 +42,25 @@ def print_stream_item(item):
 async def main():
     # MCP client config
     client = MultiServerMCPClient({
-    "email": {  # Gmail MCP
+    "gsuite": {
         "transport": "stdio",
-        "command": "node",
-        "args": ["/home/keshavbajaj/Gmail-MCP-Server/dist/index.js"]
+        "command": "uv", # full path to uv
+        "args": ["run", "mcp-gsuite"],
+        "cwd": "/home/keshavbajaj/mcp-gsuite"  # <— ADD THIS LINE
     },
-    "playwright": {
-        "transport": "stdio",
-        "command": "npx",
-        "args": ["@playwright/mcp@latest"]
-    }
 })
 
 
+
     tools = await client.get_tools()
-    
+    print(f"Loaded {len(tools)} tools from MCP servers:")
+    for t in tools:
+        print(f" - {t.name}")
+
 
     model = llm
 
-    agent = create_react_agent(
+    agent = create_agent(
         model=model,
         tools=tools,
         checkpointer=InMemorySaver()

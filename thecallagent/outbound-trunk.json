@@ -1,0 +1,14 @@
+{
+    "trunk": {
+      "name": "My outbound trunk",
+      "address": "<my-trunk>.pstn.twilio.com",
+      "numbers": ["*"],
+      "auth_username": "kirti",
+      "auth_password": "Kirtibajaj@123"
+    }
+  }
+  
+  
+ 
+
+
