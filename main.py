@@ -3,14 +3,15 @@
 import asyncio
 import os
 from langchain_google_genai import ChatGoogleGenerativeAI # type: ignore
-import dotenv
-dotenv.load_dotenv()
+from dotenv import load_dotenv
 from langchain.agents import create_agent
 from langchain_mcp_adapters.client import MultiServerMCPClient # type: ignore
 from langgraph.checkpoint.memory import InMemorySaver # type: ignore
 
+load_dotenv()
+
 #os.environ["OLLAMA_HOST"] = "http://127.0.0.1:11434"
-os.environ["GOOGLE_API_KEY"] = "AIzaSyBauKF8LMohkRh7MWTLPDQ4KG4STVcduII"
+os.environ["GOOGLE_API_KEY"] = "your_google_api_key_here"
 
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash",
