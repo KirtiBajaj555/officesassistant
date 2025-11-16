@@ -10,7 +10,6 @@ from langgraph.checkpoint.memory import InMemorySaver # type: ignore
 
 load_dotenv()
 
-#os.environ["OLLAMA_HOST"] = "http://127.0.0.1:11434"
 os.environ["GOOGLE_API_KEY"] = "your_google_api_key_here"
 
 llm = ChatGoogleGenerativeAI(
