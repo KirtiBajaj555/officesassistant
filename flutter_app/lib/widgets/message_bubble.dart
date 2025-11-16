@@ -131,17 +131,25 @@ class MessageBubble extends StatelessWidget {
     return GestureDetector(
       onLongPress: () => _showMessageOptions(),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
         decoration: BoxDecoration(
           gradient: isUser ? AppTheme.primaryGradient : null,
           color: isUser ? null : Colors.white,
           borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(20),
-            topRight: const Radius.circular(20),
-            bottomLeft: Radius.circular(isUser ? 20 : 4),
-            bottomRight: Radius.circular(isUser ? 4 : 20),
+            topLeft: const Radius.circular(22),
+            topRight: const Radius.circular(22),
+            bottomLeft: Radius.circular(isUser ? 22 : 6),
+            bottomRight: Radius.circular(isUser ? 6 : 22),
           ),
-          boxShadow: AppTheme.softShadow,
+          boxShadow: [
+            BoxShadow(
+              color: isUser 
+                  ? AppTheme.primaryBlue.withOpacity(0.15)
+                  : AppTheme.darkText.withOpacity(0.06),
+              blurRadius: isUser ? 16 : 12,
+              offset: Offset(0, isUser ? 4 : 2),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,19 +160,21 @@ class MessageBubble extends StatelessWidget {
               style: TextStyle(
                 color: isUser ? Colors.white : AppTheme.darkText,
                 fontSize: 15,
-                height: 1.5,
+                height: 1.6,
+                fontWeight: FontWeight.w400,
+                letterSpacing: 0.1,
               ),
             ),
             if (message.status == MessageStatus.sending)
               Padding(
-                padding: const EdgeInsets.only(top: 8),
+                padding: const EdgeInsets.only(top: 10),
                 child: SizedBox(
-                  width: 12,
-                  height: 12,
+                  width: 14,
+                  height: 14,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      isUser ? Colors.white : AppTheme.primaryBlue,
+                      isUser ? Colors.white.withOpacity(0.8) : AppTheme.primaryBlue,
                     ),
                   ),
                 ),
@@ -177,29 +187,30 @@ class MessageBubble extends StatelessWidget {
 
   Widget _buildAssistantHeader() {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         children: [
           Container(
-            width: 24,
-            height: 24,
+            width: 22,
+            height: 22,
             decoration: BoxDecoration(
-              gradient: AppTheme.accentGradient,
+              gradient: AppTheme.primaryGradient,
               shape: BoxShape.circle,
             ),
             child: const Icon(
-              Icons.smart_toy_outlined,
-              size: 14,
+              Icons.auto_awesome,
+              size: 12,
               color: Colors.white,
             ),
           ),
           const SizedBox(width: 8),
-          const Text(
+          Text(
             'Assistant',
             style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.mediumGray,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.mediumGray.withOpacity(0.7),
+              letterSpacing: 0.8,
             ),
           ),
         ],

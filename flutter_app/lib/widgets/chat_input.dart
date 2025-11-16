@@ -50,43 +50,52 @@ class _ChatInputState extends State<ChatInput> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.darkText.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
+        border: Border(
+          top: BorderSide(
+            color: AppTheme.lightGray.withOpacity(0.5),
+            width: 1,
           ),
-        ],
+        ),
       ),
       child: SafeArea(
+        top: false,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            // Attachment button
+            // Attachment button - more refined
             Container(
-              margin: const EdgeInsets.only(right: 8, bottom: 4),
+              margin: const EdgeInsets.only(right: 10, bottom: 2),
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
                 color: AppTheme.lightBackground,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(10),
               ),
               child: IconButton(
-                icon: const Icon(Icons.add_circle_outline),
+                icon: const Icon(Icons.add_rounded),
                 onPressed: widget.isEnabled ? _showAttachmentOptions : null,
                 color: AppTheme.primaryBlue,
-                iconSize: 26,
+                iconSize: 22,
+                padding: EdgeInsets.zero,
               ),
             ),
             
-            // Text input
+            // Text input - cleaner design
             Expanded(
               child: Container(
                 constraints: const BoxConstraints(maxHeight: 120),
                 decoration: BoxDecoration(
                   color: AppTheme.lightBackground,
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(
+                    color: _focusNode.hasFocus
+                        ? AppTheme.primaryBlue.withOpacity(0.3)
+                        : Colors.transparent,
+                    width: 1.5,
+                  ),
                 ),
                 child: TextField(
                   controller: _controller,
@@ -97,17 +106,20 @@ class _ChatInputState extends State<ChatInput> {
                   style: const TextStyle(
                     fontSize: 15,
                     color: AppTheme.darkText,
+                    fontWeight: FontWeight.w400,
+                    height: 1.4,
                   ),
                   decoration: InputDecoration(
-                    hintText: 'Ask me anything...',
+                    hintText: 'Message Assistant...',
                     hintStyle: TextStyle(
-                      color: AppTheme.mediumGray.withOpacity(0.7),
+                      color: AppTheme.mediumGray.withOpacity(0.6),
                       fontSize: 15,
+                      fontWeight: FontWeight.w400,
                     ),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
+                      horizontal: 18,
+                      vertical: 11,
                     ),
                   ),
                   onSubmitted: (_) => _handleSend(),
@@ -115,29 +127,44 @@ class _ChatInputState extends State<ChatInput> {
               ),
             ),
             
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
             
-            // Send button
-            AnimatedContainer(
+            // Send button - premium design
+            AnimatedScale(
+              scale: _hasText && widget.isEnabled ? 1.0 : 0.9,
               duration: const Duration(milliseconds: 200),
-              margin: const EdgeInsets.only(bottom: 4),
-              decoration: BoxDecoration(
-                gradient: _hasText && widget.isEnabled
-                    ? AppTheme.primaryGradient
-                    : null,
-                color: _hasText && widget.isEnabled
-                    ? null
-                    : AppTheme.lightGray,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: _hasText && widget.isEnabled
-                    ? AppTheme.glowShadow
-                    : null,
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.send_rounded),
-                onPressed: _hasText && widget.isEnabled ? _handleSend : null,
-                color: Colors.white,
-                iconSize: 22,
+              curve: Curves.easeOut,
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 2),
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  gradient: _hasText && widget.isEnabled
+                      ? AppTheme.primaryGradient
+                      : null,
+                  color: _hasText && widget.isEnabled
+                      ? null
+                      : AppTheme.lightGray.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: _hasText && widget.isEnabled
+                      ? [
+                          BoxShadow(
+                            color: AppTheme.primaryBlue.withOpacity(0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: IconButton(
+                  icon: Icon(
+                    _hasText ? Icons.arrow_upward_rounded : Icons.arrow_upward_rounded,
+                    size: 20,
+                  ),
+                  onPressed: _hasText && widget.isEnabled ? _handleSend : null,
+                  color: Colors.white,
+                  padding: EdgeInsets.zero,
+                ),
               ),
             ),
           ],

@@ -20,16 +20,7 @@ class ChatService extends ChangeNotifier {
   }
 
   void _initializeChat() {
-    // Add welcome message
-    _messages.add(Message.system(
-      '👋 Welcome to your Office Assistant! I can help you with:\n\n'
-      '📞 Making phone calls\n'
-      '📧 Managing emails\n'
-      '📅 Scheduling meetings\n'
-      '📊 Data analysis\n'
-      '🔍 Information lookup\n\n'
-      'How can I assist you today?'
-    ));
+    // Don't add welcome message - use the beautiful empty state instead
     notifyListeners();
   }
 

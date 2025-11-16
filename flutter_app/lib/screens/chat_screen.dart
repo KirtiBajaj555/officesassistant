@@ -5,6 +5,7 @@ import '../theme/app_theme.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/typing_indicator.dart';
 import '../widgets/chat_input.dart';
+import '../widgets/welcome_section.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -85,51 +86,84 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
   Widget _buildAppBar(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: AppTheme.softShadow,
+        color: Colors.white.withOpacity(0.95),
+        border: Border(
+          bottom: BorderSide(
+            color: AppTheme.lightGray.withOpacity(0.5),
+            width: 1,
+          ),
+        ),
       ),
       child: Row(
         children: [
-          // Logo/Avatar
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              gradient: AppTheme.primaryGradient,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: AppTheme.glowShadow,
-            ),
-            child: const Icon(
-              Icons.assistant_rounded,
-              color: Colors.white,
-              size: 24,
+          // Logo/Avatar with subtle animation
+          Hero(
+            tag: 'app_logo',
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                gradient: AppTheme.primaryGradient,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.auto_awesome,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           
           // Title
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   'Office Assistant',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 17,
+                        letterSpacing: -0.3,
                       ),
                 ),
                 Consumer<ChatService>(
                   builder: (context, chatService, child) {
+                    if (chatService.isTyping) {
+                      return Row(
+                        children: [
+                          SizedBox(
+                            width: 12,
+                            height: 12,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                AppTheme.primaryBlue.withOpacity(0.6),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Thinking...',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: AppTheme.primaryBlue.withOpacity(0.8),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                          ),
+                        ],
+                      );
+                    }
                     return Text(
-                      chatService.isTyping
-                          ? 'Typing...'
-                          : 'Always here to help',
+                      'Online',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: chatService.isTyping
-                                ? AppTheme.primaryBlue
-                                : AppTheme.mediumGray,
+                            color: AppTheme.successGreen,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
                           ),
                     );
                   },
@@ -138,11 +172,20 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
             ),
           ),
           
-          // Actions
-          IconButton(
-            icon: const Icon(Icons.more_vert),
-            onPressed: () => _showOptionsMenu(context),
-            color: AppTheme.mediumGray,
+          // Actions with better spacing
+          Container(
+            decoration: BoxDecoration(
+              color: AppTheme.lightBackground,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.more_horiz_rounded),
+              onPressed: () => _showOptionsMenu(context),
+              color: AppTheme.mediumGray,
+              iconSize: 22,
+              padding: const EdgeInsets.all(8),
+              constraints: const BoxConstraints(),
+            ),
           ),
         ],
       ),
@@ -182,39 +225,12 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              gradient: AppTheme.primaryGradient,
-              shape: BoxShape.circle,
-              boxShadow: AppTheme.glowShadow,
-            ),
-            child: const Icon(
-              Icons.assistant_rounded,
-              size: 64,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Your Office Assistant',
-            style: Theme.of(context).textTheme.displayMedium,
-          ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40),
-            child: Text(
-              'I\'m here to help you with calls, emails,\nscheduling, and much more!',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          ),
-        ],
-      ),
+    return WelcomeSection(
+      onSuggestionTap: (suggestion) {
+        final chatService = context.read<ChatService>();
+        chatService.sendMessage(suggestion);
+        _scrollToBottom();
+      },
     );
   }
 
