@@ -1,13 +1,57 @@
-# Python-generated files
+# Python
 __pycache__/
-*.py[oc]
-build/
-dist/
-wheels/
-*.egg-info
-.env/
-.eggs/
-# Virtual environments
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
 .venv
+*.egg-info/
+dist/
+build/
+
+# Environment variables
 .env
+*.env
+!.env.example
+
+# IDE
 .vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Flutter
+flutter_app/.dart_tool/
+flutter_app/.flutter-plugins
+flutter_app/.flutter-plugins-dependencies
+flutter_app/.packages
+flutter_app/build/
+flutter_app/.pub-cache/
+flutter_app/.pub/
+flutter_app/ios/Pods/
+flutter_app/ios/.symlinks/
+flutter_app/ios/Flutter/Flutter.framework
+flutter_app/ios/Flutter/Flutter.podspec
+flutter_app/.fvm/
+flutter_app/coverage/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Database
+*.db
+*.sqlite3
