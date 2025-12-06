@@ -1,348 +1,246 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import '../services/auth_service.dart';
 import '../services/chat_service.dart';
-import '../theme/app_theme.dart';
-import '../widgets/message_bubble.dart';
-import '../widgets/typing_indicator.dart';
-import '../widgets/chat_input.dart';
-import '../widgets/welcome_section.dart';
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
-
+  const ChatScreen({Key? key}) : super(key: key);
+  
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
-  final ScrollController _scrollController = ScrollController();
-  late AnimationController _fadeController;
-  late Animation<double> _fadeAnimation;
-
+class _ChatScreenState extends State<ChatScreen> {
+  final AuthService _authService = AuthService();
+  final ChatService _chatService = ChatService();
+  final TextEditingController _messageController = TextEditingController();
+  final List<Map<String, String>> _messages = [];
+  bool _isLoading = false;
+  
   @override
   void initState() {
     super.initState();
-    _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 500),
-      vsync: this,
-    );
-    _fadeAnimation = CurvedAnimation(
-      parent: _fadeController,
-      curve: Curves.easeIn,
-    );
-    _fadeController.forward();
+    _checkBackendHealth();
   }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    _fadeController.dispose();
-    super.dispose();
+  
+  Future<void> _checkBackendHealth() async {
+    final isHealthy = await _chatService.checkHealth();
+    if (!isHealthy && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Warning: Backend is not reachable. Make sure Docker is running.'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 5),
+        ),
+      );
+    }
   }
-
-  void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      Future.delayed(const Duration(milliseconds: 100), () {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+  
+  Future<void> _sendMessage() async {
+    if (_messageController.text.trim().isEmpty) return;
+    
+    final message = _messageController.text.trim();
+    _messageController.clear();
+    
+    setState(() {
+      _messages.add({'role': 'user', 'content': message});
+      _isLoading = true;
+    });
+    
+    try {
+      final accessToken = await _authService.getAccessToken();
+      final userId = _authService.currentUser?.uid ?? 'unknown';
+      
+      if (accessToken == null) {
+        throw Exception('No access token found. Please sign in again.');
+      }
+      
+      final response = await _chatService.sendMessage(
+        message: message,
+        userId: userId,
+        accessToken: accessToken,
+      );
+      
+      setState(() {
+        _messages.add({'role': 'assistant', 'content': response});
+      });
+    } catch (e) {
+      setState(() {
+        _messages.add({
+          'role': 'error',
+          'content': 'Error: $e',
+        });
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
       });
     }
   }
-
+  
   @override
   Widget build(BuildContext context) {
+    final user = _authService.currentUser;
+    
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppTheme.backgroundGradient,
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildAppBar(context),
-              Expanded(
-                child: _buildMessageList(),
-              ),
-              Consumer<ChatService>(
-                builder: (context, chatService, child) {
-                  return ChatInput(
-                    onSendMessage: (message) {
-                      chatService.sendMessage(message);
-                      _scrollToBottom();
-                    },
-                    isEnabled: !chatService.isLoading,
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.95),
-        border: Border(
-          bottom: BorderSide(
-            color: AppTheme.lightGray.withOpacity(0.5),
-            width: 1,
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          // Logo/Avatar with subtle animation
-          Hero(
-            tag: 'app_logo',
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                gradient: AppTheme.primaryGradient,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.auto_awesome,
-                color: Colors.white,
-                size: 20,
+      appBar: AppBar(
+        title: const Text('Office Agent'),
+        actions: [
+          if (user?.photoURL != null)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: CircleAvatar(
+                backgroundImage: NetworkImage(user!.photoURL!),
               ),
             ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await _authService.signOut();
+              if (mounted) {
+                Navigator.of(context).pushReplacementNamed('/login');
+              }
+            },
           ),
-          const SizedBox(width: 14),
-          
-          // Title
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+        ],
+      ),
+      body: Column(
+        children: [
+          // Backend status indicator
+          Container(
+            padding: const EdgeInsets.all(8),
+            color: Colors.blue.shade50,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                Icon(Icons.info_outline, size: 16, color: Colors.blue.shade700),
+                const SizedBox(width: 8),
                 Text(
-                  'Office Assistant',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 17,
-                        letterSpacing: -0.3,
-                      ),
-                ),
-                Consumer<ChatService>(
-                  builder: (context, chatService, child) {
-                    if (chatService.isTyping) {
-                      return Row(
-                        children: [
-                          SizedBox(
-                            width: 12,
-                            height: 12,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                AppTheme.primaryBlue.withOpacity(0.6),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Thinking...',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: AppTheme.primaryBlue.withOpacity(0.8),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                          ),
-                        ],
-                      );
-                    }
-                    return Text(
-                      'Online',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppTheme.successGreen,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                    );
-                  },
+                  'Connected to: ${ChatService.baseUrl}',
+                  style: TextStyle(fontSize: 12, color: Colors.blue.shade700),
                 ),
               ],
             ),
           ),
           
-          // Actions with better spacing
+          // Messages list
+          Expanded(
+            child: _messages.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey.shade300),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Start a conversation!',
+                          style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Try: "List my emails" or "What meetings do I have?"',
+                          style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _messages.length,
+                    itemBuilder: (context, index) {
+                      final message = _messages[index];
+                      final isUser = message['role'] == 'user';
+                      final isError = message['role'] == 'error';
+                      
+                      return Align(
+                        alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: isError
+                                ? Colors.red.shade100
+                                : isUser
+                                    ? Colors.blue.shade100
+                                    : Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          constraints: BoxConstraints(
+                            maxWidth: MediaQuery.of(context).size.width * 0.75,
+                          ),
+                          child: Text(
+                            message['content'] ?? '',
+                            style: TextStyle(
+                              color: isError ? Colors.red.shade900 : Colors.black87,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          
+          // Loading indicator
+          if (_isLoading)
+            const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  SizedBox(width: 8),
+                  Text('Thinking...', style: TextStyle(color: Colors.grey)),
+                ],
+              ),
+            ),
+          
+          // Input field
           Container(
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppTheme.lightBackground,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.more_horiz_rounded),
-              onPressed: () => _showOptionsMenu(context),
-              color: AppTheme.mediumGray,
-              iconSize: 22,
-              padding: const EdgeInsets.all(8),
-              constraints: const BoxConstraints(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMessageList() {
-    return Consumer<ChatService>(
-      builder: (context, chatService, child) {
-        final messages = chatService.messages;
-
-        if (messages.isEmpty) {
-          return _buildEmptyState();
-        }
-
-        return FadeTransition(
-          opacity: _fadeAnimation,
-          child: ListView.builder(
-            controller: _scrollController,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            itemCount: messages.length + (chatService.isTyping ? 1 : 0),
-            itemBuilder: (context, index) {
-              if (index == messages.length) {
-                return const TypingIndicator();
-              }
-
-              final message = messages[index];
-              return MessageBubble(
-                key: ValueKey(message.id),
-                message: message,
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return WelcomeSection(
-      onSuggestionTap: (suggestion) {
-        final chatService = context.read<ChatService>();
-        chatService.sendMessage(suggestion);
-        _scrollToBottom();
-      },
-    );
-  }
-
-  void _showOptionsMenu(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 12),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppTheme.lightGray,
-                  borderRadius: BorderRadius.circular(2),
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, -2),
                 ),
-              ),
-              const SizedBox(height: 24),
-              ListTile(
-                leading: const Icon(Icons.delete_outline, color: Colors.red),
-                title: const Text('Clear Chat'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _confirmClearChat(context);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.info_outline),
-                title: const Text('About'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showAboutDialog(context);
-                },
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _confirmClearChat(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Clear Chat?'),
-        content: const Text('This will delete all messages in this conversation.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              context.read<ChatService>().clearChat();
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              ],
             ),
-            child: const Text('Clear'),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _messageController,
+                    decoration: const InputDecoration(
+                      hintText: 'Type a message...',
+                      border: OutlineInputBorder(),
+                    ),
+                    onSubmitted: (_) => _sendMessage(),
+                    enabled: !_isLoading,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.send),
+                  onPressed: _isLoading ? null : _sendMessage,
+                  color: Colors.blue,
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
-
-  void _showAboutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                gradient: AppTheme.primaryGradient,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.assistant_rounded,
-                color: Colors.white,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Text('Office Assistant'),
-          ],
-        ),
-        content: const Text(
-          'Your AI-powered assistant for managing office tasks, making calls, scheduling meetings, and handling communications.\n\nVersion 1.0.0',
-          style: TextStyle(height: 1.5),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
+  
+  @override
+  void dispose() {
+    _messageController.dispose();
+    super.dispose();
   }
 }
-

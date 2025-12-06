@@ -2,7 +2,7 @@ import logging
 import os
 from pathlib import Path
 from dotenv import load_dotenv
-from livekit.agents import JobContext, WorkerOptions, cli
+from livekit.agents import JobContext, WorkerOptions, cli, llm
 from livekit.agents.voice import Agent, AgentSession
 from livekit.plugins import silero, deepgram, google
 
@@ -34,17 +34,65 @@ class SimpleAgent(Agent):
         logger.info("Agent entering session, generating initial greeting...")
         self.session.generate_reply()
 
+    async def summarize(self):
+        """Summarize the conversation using the LLM"""
+        logger.info("Generating conversation summary...")
+        
+        # Get chat history
+        # The chat_ctx in Agent is iterable and yields messages
+        messages = list(self.chat_ctx)
+        if not messages:
+            logger.info("No messages to summarize")
+            return
+
+        # Prepare prompt for summarization
+        prompt = "Please summarize the following conversation:\n\n"
+        for msg in messages:
+            role = msg.role
+            content = msg.content
+            if content:
+                prompt += f"{role}: {content}\n"
+        
+        prompt += "\nSummary:"
+
+        # Generate summary using the configured LLM
+        try:
+            # We create a new chat context for the summary generation to avoid messing with the main one
+            summary_stream = await self.llm.chat(
+                chat_ctx=llm.ChatContext().append(text=prompt, role=llm.ChatRole.USER)
+            )
+            
+            full_summary = ""
+            async for chunk in summary_stream:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    content = chunk.choices[0].delta.content
+                    full_summary += content
+            
+            print("\n" + "="*50)
+            print("CONVERSATION SUMMARY")
+            print("="*50)
+            print(full_summary)
+            print("="*50 + "\n")
+            
+        except Exception as e:
+            logger.error(f"Error generating summary: {e}")
+
 async def entrypoint(ctx: JobContext):
     """Main entrypoint for the agent"""
     logger.info(f"🚀 Agent starting in room: {ctx.room.name}")
     
     session = AgentSession()
+    agent = SimpleAgent()
+    
     await session.start(
-        agent=SimpleAgent(),
+        agent=agent,
         room=ctx.room
     )
     
-    logger.info("✅ Agent session started successfully")
+    logger.info("✅ Agent session ended")
+    
+    # Generate summary after session ends
+    await agent.summarize()
 
 if __name__ == "__main__":
     cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint))

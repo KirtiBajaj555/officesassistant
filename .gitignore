@@ -55,3 +55,8 @@ htmlcov/
 # Database
 *.db
 *.sqlite3
+
+# Google Credentials (sensitive)
+**/token.json
+**/credentials.json
+!**/*.example

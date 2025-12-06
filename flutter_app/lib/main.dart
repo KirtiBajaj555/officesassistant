@@ -1,47 +1,60 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'screens/login_screen.dart';
 import 'screens/chat_screen.dart';
-import 'services/chat_service.dart';
-import 'theme/app_theme.dart';
+import 'services/auth_service.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Set system UI overlay style for modern look
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-      systemNavigationBarColor: Colors.white,
-      systemNavigationBarIconBrightness: Brightness.dark,
-    ),
-  );
-  
-  // Lock orientation to portrait for mobile
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-  
-  runApp(const OfficeAssistantApp());
-}
-
-class OfficeAssistantApp extends StatelessWidget {
-  const OfficeAssistantApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => ChatService()),
-      ],
-      child: MaterialApp(
-        title: 'Office Assistant',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        home: const ChatScreen(),
+  // Initialize Firebase
+  try {
+    await Firebase.initializeApp(
+      options: const FirebaseOptions(
+        apiKey: 'AIzaSyDJYGZWPsqlgftuBQLzskzid1D-67Omdks',
+        authDomain: 'theofficeassistant-de2f0.firebaseapp.com',
+        projectId: 'theofficeassistant-de2f0',
+        storageBucket: 'theofficeassistant-de2f0.firebasestorage.app',
+        messagingSenderId: '513117359222',
+        appId: '1:513117359222:web:0178c7b14430d4a37a2357',
       ),
     );
+  } catch (e) {
+    print('Firebase initialization error: $e');
+  }
+  
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+  
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Office Agent',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        useMaterial3: true,
+      ),
+      home: const AuthWrapper(),
+      routes: {
+        '/login': (context) => const LoginScreen(),
+        '/chat': (context) => const ChatScreen(),
+      },
+    );
+  }
+}
+
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({Key? key}) : super(key: key);
+  
+  @override
+  Widget build(BuildContext context) {
+    final authService = AuthService();
+    
+    return authService.isSignedIn()
+        ? const ChatScreen()
+        : const LoginScreen();
   }
 }

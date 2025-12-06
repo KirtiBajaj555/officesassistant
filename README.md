@@ -66,62 +66,32 @@ officesassistant/
 
 ## 🛠️ Setup Instructions
 
-### Prerequisites
-- **Flutter SDK**: 3.0+ ([Install Flutter](https://flutter.dev/docs/get-started/install))
-- **Python**: 3.9+ 
-- **UV**: Python package manager ([Install UV](https://github.com/astral-sh/uv))
+For complete setup instructions including:
+- Development environment setup
+- Production deployment with Docker
+- Environment configuration
+- API keys and credentials
+- Troubleshooting guide
 
-### 1. Backend Setup
+**See [SETUP.md](SETUP.md) for the comprehensive setup guide.**
+
+### Quick Start (Development)
 
 ```bash
-# Install Python dependencies
-cd officesassistant
+# 1. Install Python dependencies
 uv pip install -r requirements-api.txt
 
-# Set up environment variables
-cp thecallagent/.env.example thecallagent/.env
-# Edit .env with your API keys:
-# - GOOGLE_API_KEY
-# - LIVEKIT_URL
-# - LIVEKIT_API_KEY
-# - LIVEKIT_API_SECRET
-# - SIP_OUTBOUND_TRUNK_ID
+# 2. Set up environment variables
+cp .env.development .env
+# Edit .env with your API keys
 
-# Start the FastAPI server
+# 3. Start backend
 python api_server.py
-# Server will run on http://localhost:8000
-```
 
-### 2. Flutter App Setup
-
-```bash
-# Navigate to Flutter app
+# 4. In a new terminal, start Flutter app
 cd flutter_app
-
-# Get dependencies
 flutter pub get
-
-# Run on your preferred platform
-flutter run -d chrome          # Web
-flutter run -d macos           # macOS
-flutter run -d windows         # Windows
-flutter run                    # Mobile (connected device)
-
-# Build for production
-flutter build apk              # Android
-flutter build ios              # iOS
-flutter build windows          # Windows .exe
-flutter build macos            # macOS .app
-flutter build linux            # Linux
-flutter build web              # Web app
-```
-
-### 3. Start Calling Agent (Optional)
-
-```bash
-# In a separate terminal
-cd thecallagent
-python calling_agent.py
+flutter run -d chrome
 ```
 
 ## 🚀 Usage
