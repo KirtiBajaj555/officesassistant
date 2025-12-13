@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'screens/login_screen.dart';
 import 'screens/chat_screen.dart';
 import 'services/auth_service.dart';
@@ -51,10 +52,26 @@ class AuthWrapper extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
-    final authService = AuthService();
-    
-    return authService.isSignedIn()
-        ? const ChatScreen()
-        : const LoginScreen();
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        // Show loading while checking auth state
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+        
+        // User is signed in
+        if (snapshot.hasData && snapshot.data != null) {
+          return const ChatScreen();
+        }
+        
+        // User is not signed in
+        return const LoginScreen();
+      },
+    );
   }
 }
